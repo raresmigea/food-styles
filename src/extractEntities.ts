@@ -1,9 +1,4 @@
-import { Pool } from 'pg';
-
-// Set up the PostgreSQL connection pool
-const pool = new Pool({
-    connectionString: 'postgresql://neondb_owner:dB9cFnXCsH8Z@ep-wild-bonus-a5sl15bt.us-east-2.aws.neon.tech/neondb?sslmode=require',
-});
+import * as fs from 'fs';
 
 interface Entity {
     id: number;
@@ -17,64 +12,68 @@ interface Entities {
     diets: Entity[];
 }
 
-// Function to query the database for entities
-async function queryEntities(searchTerm: string): Promise<Entities> {
-    console.log('1 searchTerm: ', searchTerm);
-    const client = await pool.connect();
+function readJsonFile(filename: string): Entity[] {
+    const rawData = fs.readFileSync(filename);
+    return JSON.parse(rawData.toString());
+}
 
-    const entities: Entities = {
-        cities: [],
-        brands: [],
-        dish_types: [],
-        diets: []
+function loadEntitiesFromJson(): Entities {
+    const entities = {
+        cities: readJsonFile('./src/data/cities.json'),
+        brands: readJsonFile('./src/data/brands.json'),
+        dish_types: readJsonFile('./src/data/dish-types.json'),
+        diets: readJsonFile('./src/data/diets.json'),
     };
-
-    try {
-        console.log(`Searching for entities matching: ${searchTerm}`);
-        
-        // Query cities, brands, dish_types and diets
-        for (const entityType of Object.keys(entities)) {
-            const query = `SELECT id, name FROM ${entityType} WHERE name ILIKE $1`;
-            console.log('Executing query:', query); // Log the query being executed
-            const res = await client.query(query, [`%${searchTerm}%`]);
-            console.log(`Query result for ${entityType}:`, res.rows);
-            entities[entityType as keyof Entities] = res.rows;
-        }
-    } catch (error) {
-        console.error('Error querying entities:', error); // Log any errors that occur during the query
-    } finally {
-        client.release();
-    }
+    // console.log('Loaded Entities:', JSON.stringify(entities, null, 2));
     return entities;
 }
 
-// Function to extract entities from search term
+
 async function extractEntities(searchTerm: string): Promise<object[]> {
-    console.log('2 searchTerm: ', searchTerm);
-    const matchedEntities = await queryEntities(searchTerm);
-    console.log('Matched Entities:', matchedEntities); // Log matched entities
+    const matchedEntities = loadEntitiesFromJson();
+    console.log('Matched Entities:', JSON.stringify(matchedEntities, null, 2));
+
     const results: object[] = [];
 
-    // Generate all possible combinations
-    for (const city of matchedEntities.cities) {
-        for (const brand of matchedEntities.brands) {
+    // Parse search term to extract city name, brand name, diet, and dish type
+    const searchTokens = searchTerm.split(' in ');
+    const mainQuery = searchTokens[0];
+    const cityName = searchTokens[1];
+
+    // Filter cities based on the parsed city name
+    const filteredCities = matchedEntities.cities.filter(city => city.name.toLowerCase() === cityName.toLowerCase());
+    console.log('Filtered Cities:', JSON.stringify(filteredCities, null, 2));
+
+    // Filter brands based on the main query
+    const filteredBrands = matchedEntities.brands.filter(brand => brand.name.toLowerCase().includes(mainQuery.toLowerCase()));
+    console.log('Filtered Brands:', JSON.stringify(filteredBrands, null, 2));
+
+    // Filter diets based on the main query
+    const filteredDiets = matchedEntities.diets.filter(diet => diet.name.toLowerCase().includes(mainQuery.toLowerCase()));
+    console.log('Filtered Diets:', JSON.stringify(filteredDiets, null, 2));
+
+    // Filter dish types based on the main query
+    const filteredDishTypes = matchedEntities.dish_types.filter(dishType => dishType.name.toLowerCase().includes(mainQuery.toLowerCase()));
+    console.log('Filtered Dish Types:', JSON.stringify(filteredDishTypes, null, 2));
+
+    // Generate combinations for filtered cities and brands
+    for (const city of filteredCities) {
+        for (const brand of filteredBrands) {
             results.push({ city, brand });
-        }
-
-        for (const dish_type of matchedEntities.dish_types) {
-            results.push({ city, dishType: dish_type });
-        }
-
-        for (const diet of matchedEntities.diets) {
-            for (const dish_type of matchedEntities.dish_types) {
-                results.push({ city, diet, dishType: dish_type });
-            }
         }
     }
 
-    for (const brand of matchedEntities.brands) {
-        for (const diet of matchedEntities.diets) {
-            results.push({ brand, diet });
+    // Generate combinations for filtered cities and diets
+    for (const city of filteredCities) {
+        for (const diet of filteredDiets) {
+            results.push({ city, diet });
+        }
+    }
+
+    // Generate combinations for filtered cities and dish types
+    for (const city of filteredCities) {
+        for (const dishType of filteredDishTypes) {
+            results.push({ city, dishType });
         }
     }
 
@@ -84,6 +83,7 @@ async function extractEntities(searchTerm: string): Promise<object[]> {
 // Example usage
 (async () => {
     const searchTerm = "McDonald's in London";
+    console.log('Search Term:', searchTerm);
     const entities = await extractEntities(searchTerm);
-    console.log('entities: ', JSON.stringify(entities, null, 2));
-})().catch(error => console.error(error.stack));
+    console.log('entities:', JSON.stringify(entities, null, 2));
+})().catch(error => console.error('Error:', error.stack));
