@@ -41,7 +41,13 @@ async function queryEntities(searchTerm: string): Promise<Entities> {
 
 So I've used JSON files to store the information, the files are in `data` folder.
 
-In order to run it, open a terminal, go to `src` folder then run `npx ts-node src/extractEntities.ts`
+## How to run the code: ##
+
+- clone the repo
+- run `npm install`
+- go to `src` folder
+- run `npx ts-node src/extractEntities.ts`
+
 
 For the initial input it should return:
 
