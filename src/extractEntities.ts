@@ -24,14 +24,12 @@ function loadEntitiesFromJson(): Entities {
         dish_types: readJsonFile('./src/data/dish-types.json'),
         diets: readJsonFile('./src/data/diets.json'),
     };
-    // console.log('Loaded Entities:', JSON.stringify(entities, null, 2));
     return entities;
 }
 
 
 async function extractEntities(searchTerm: string): Promise<object[]> {
     const matchedEntities = loadEntitiesFromJson();
-    console.log('Matched Entities:', JSON.stringify(matchedEntities, null, 2));
 
     const results: object[] = [];
 
@@ -42,7 +40,6 @@ async function extractEntities(searchTerm: string): Promise<object[]> {
 
     // Filter cities based on the parsed city name
     const filteredCities = matchedEntities.cities.filter(city => city.name.toLowerCase() === cityName.toLowerCase());
-    console.log('Filtered Cities:', JSON.stringify(filteredCities, null, 2));
 
     // Filter brands based on the main query
     const filteredBrands = matchedEntities.brands.filter(brand => brand.name.toLowerCase().includes(mainQuery.toLowerCase()));
@@ -50,11 +47,9 @@ async function extractEntities(searchTerm: string): Promise<object[]> {
 
     // Filter diets based on the main query
     const filteredDiets = matchedEntities.diets.filter(diet => diet.name.toLowerCase().includes(mainQuery.toLowerCase()));
-    console.log('Filtered Diets:', JSON.stringify(filteredDiets, null, 2));
 
     // Filter dish types based on the main query
     const filteredDishTypes = matchedEntities.dish_types.filter(dishType => dishType.name.toLowerCase().includes(mainQuery.toLowerCase()));
-    console.log('Filtered Dish Types:', JSON.stringify(filteredDishTypes, null, 2));
 
     // Generate combinations for filtered cities and brands
     for (const city of filteredCities) {
