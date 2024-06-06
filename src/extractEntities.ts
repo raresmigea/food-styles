@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-// Set up the PostgreSQL connection pool using the provided connection string
+// Set up the PostgreSQL connection pool
 const pool = new Pool({
     connectionString: 'postgresql://neondb_owner:dB9cFnXCsH8Z@ep-wild-bonus-a5sl15bt.us-east-2.aws.neon.tech/neondb?sslmode=require',
 });
@@ -32,7 +32,7 @@ async function queryEntities(searchTerm: string): Promise<Entities> {
     try {
         console.log(`Searching for entities matching: ${searchTerm}`);
         
-        // Query cities, brands, dish_types, and diets
+        // Query cities, brands, dish_types and diets
         for (const entityType of Object.keys(entities)) {
             const query = `SELECT id, name FROM ${entityType} WHERE name ILIKE $1`;
             console.log('Executing query:', query); // Log the query being executed
