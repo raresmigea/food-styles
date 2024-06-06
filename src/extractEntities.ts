@@ -27,57 +27,53 @@ function loadEntitiesFromJson(): Entities {
     return entities;
 }
 
-
 async function extractEntities(searchTerm: string): Promise<object[]> {
     const matchedEntities = loadEntitiesFromJson();
 
     const results: object[] = [];
-
-    // Parse search term to extract city name, brand name, diet, and dish type
     const searchTokens = searchTerm.split(' in ');
     const mainQuery = searchTokens[0];
-    const cityName = searchTokens[1];
+    const cityName = searchTokens.length > 1 ? searchTokens[1] : '';
 
-    // Filter cities based on the parsed city name
-    const filteredCities = matchedEntities.cities.filter(city => city.name.toLowerCase() === cityName.toLowerCase());
+    const filteredCities = cityName 
+        ? matchedEntities.cities.filter(city => city.name.toLowerCase() === cityName.toLowerCase())
+        : [];
 
-    // Filter brands based on the main query
     const filteredBrands = matchedEntities.brands.filter(brand => brand.name.toLowerCase().includes(mainQuery.toLowerCase()));
-    console.log('Filtered Brands:', JSON.stringify(filteredBrands, null, 2));
-
-    // Filter diets based on the main query
     const filteredDiets = matchedEntities.diets.filter(diet => diet.name.toLowerCase().includes(mainQuery.toLowerCase()));
-
-    // Filter dish types based on the main query
     const filteredDishTypes = matchedEntities.dish_types.filter(dishType => dishType.name.toLowerCase().includes(mainQuery.toLowerCase()));
 
-    // Generate combinations for filtered cities and brands
-    for (const city of filteredCities) {
-        for (const brand of filteredBrands) {
-            results.push({ city, brand });
-        }
+    const entitiesToCombine = [
+        { key: 'brand', values: filteredBrands },
+        { key: 'diet', values: filteredDiets },
+        { key: 'dishType', values: filteredDishTypes }
+    ];
+
+    // Add combinations without city if city is not specified in the search term
+    if (!cityName) {
+        entitiesToCombine.forEach(entity => {
+            entity.values.forEach(value => {
+                results.push({ [entity.key]: value });
+            });
+        });
+        return results;
     }
 
-    // Generate combinations for filtered cities and diets
-    for (const city of filteredCities) {
-        for (const diet of filteredDiets) {
-            results.push({ city, diet });
-        }
-    }
-
-    // Generate combinations for filtered cities and dish types
-    for (const city of filteredCities) {
-        for (const dishType of filteredDishTypes) {
-            results.push({ city, dishType });
-        }
-    }
+    // Add combinations with city
+    entitiesToCombine.forEach(entity => {
+        entity.values.forEach(value => {
+            filteredCities.forEach(city => {
+                results.push({ city, [entity.key]: value });
+            });
+        });
+    });
 
     return results;
 }
 
 // Example usage
 (async () => {
-    const searchTerm = "McDonald's in London";
+    const searchTerm = "vegan sushi in London";
     console.log('Search Term:', searchTerm);
     const entities = await extractEntities(searchTerm);
     console.log('entities:', JSON.stringify(entities, null, 2));
