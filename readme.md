@@ -1,4 +1,5 @@
 Initially I tried to develop it with Postgres but the Neon DB that I was using was not returning the data from the tables.
+Here is the implementation for Postgres: https://github.com/raresmigea/food-styles/commit/2ab59d8a18fefd6d62a7a829b57f2286578994ae#diff-117b15355f721d250aea88628b9ebdafd88a4c2669932e640857229149e93515
 
 So I've used JSON files to store the information.
 
